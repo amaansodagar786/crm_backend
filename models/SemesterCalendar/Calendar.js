@@ -9,13 +9,17 @@ const calendarSchema = new mongoose.Schema({
   },
   semesterStart: String,
   semesterEnd: String,
-  calendar: [
-    {
+  calendar: {
+    type: [{
       date: String,
-      type: String, // 'working_day', 'weekend', 'public_holiday', 'custom_holiday'
+      type: { 
+        type: String,
+        enum: ['working_day', 'weekend', 'public_holiday', 'custom_holiday']
+      },
       name: String,
-    },
-  ],
+    }],
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -7,6 +7,7 @@ require('dotenv').config();
 
 // Fetch public holidays from Google Calendar API
 router.get("/holidays", async (req, res) => {
+    console.log("Api Key", process.env.GOOGLE_CALENDAR_API_KEY);
   const { start, end } = req.query;
   try {
     const calendarId = "en.indian%23holiday%40group.v.calendar.google.com";
@@ -33,9 +34,18 @@ router.post("/:instituteId/save", async (req, res) => {
   const { semesterStart, semesterEnd, calendar } = req.body;
   
   try {
-    // Validate calendar data is an array
+    // Ensure calendar is an array
     if (!Array.isArray(calendar)) {
       return res.status(400).json({ error: "Calendar data must be an array" });
+    }
+
+    // Validate each calendar item
+    const isValidCalendar = calendar.every(item => 
+      item.date && item.type && typeof item.name === 'string'
+    );
+    
+    if (!isValidCalendar) {
+      return res.status(400).json({ error: "Invalid calendar data format" });
     }
 
     // Check if calendar exists for this institute and semester
@@ -72,6 +82,8 @@ router.post("/:instituteId/save", async (req, res) => {
   }
 });
 
+
+
 // Load institute calendar
 router.get("/:instituteId/load", async (req, res) => {
   const { instituteId } = req.params;
@@ -84,9 +96,12 @@ router.get("/:instituteId/load", async (req, res) => {
       semesterEnd
     });
 
-    if (!calendar) {
-      return res.status(404).json({ error: "Calendar not found" });
-    }
-
-    res.json(calendar);
+    res.json(calendar || { calendar: [] }); // Return empty array if not found
+  } catch (error) {
+    console.error("Error loading calendar", error);
+    res.status(500).json({ error: "Failed to load calendar" });
   }
+});
+
+
+module.exports = router;
