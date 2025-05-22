@@ -29,52 +29,60 @@ router.get("/holidays", async (req, res) => {
 
 // Save institute calendar
 
+// Updated save endpoint
+// Updated save endpoint
 router.post("/:instituteId/save", async (req, res) => {
   const { instituteId } = req.params;
   const { semesterStart, semesterEnd, calendar } = req.body;
   
   try {
-    // Ensure calendar is an array
+    // Validate calendar data
     if (!Array.isArray(calendar)) {
       return res.status(400).json({ error: "Calendar data must be an array" });
     }
 
-    // Validate each calendar item
-    const isValidCalendar = calendar.every(item => 
-      item.date && item.type && typeof item.name === 'string'
-    );
-    
-    if (!isValidCalendar) {
-      return res.status(400).json({ error: "Invalid calendar data format" });
-    }
-
-    // Check if calendar exists for this institute and semester
-    let existingCalendar = await Calendar.findOne({ 
+    // First try to find any existing overlapping calendar
+    const existingCalendar = await Calendar.findOne({
       instituteId,
-      semesterStart,
-      semesterEnd
+      $or: [
+        { semesterStart: { $lte: semesterEnd }, semesterEnd: { $gte: semesterStart } },
+        { semesterStart: { $gte: semesterStart }, semesterEnd: { $lte: semesterEnd } }
+      ]
     });
 
-    if (existingCalendar) {
-      // Update existing calendar
-      existingCalendar.calendar = calendar;
-      existingCalendar.updatedAt = Date.now();
-      await existingCalendar.save();
-    } else {
-      // Create new calendar
-      existingCalendar = new Calendar({ 
-        instituteId, 
-        semesterStart, 
-        semesterEnd, 
-        calendar 
-      });
-      await existingCalendar.save();
-    }
+    // Prepare the update object
+    const updateData = {
+      semesterStart: existingCalendar 
+        ? new Date(Math.min(new Date(semesterStart), new Date(existingCalendar.semesterStart)))
+        : new Date(semesterStart),
+      semesterEnd: existingCalendar 
+        ? new Date(Math.max(new Date(semesterEnd), new Date(existingCalendar.semesterEnd)))
+        : new Date(semesterEnd),
+      calendar,
+      updatedAt: Date.now()
+    };
+
+    // Perform the update or insert
+    const result = await Calendar.findOneAndUpdate(
+      { 
+        instituteId,
+        $or: [
+          { semesterStart: { $lte: semesterEnd }, semesterEnd: { $gte: semesterStart } },
+          { semesterStart: { $gte: semesterStart }, semesterEnd: { $lte: semesterEnd } }
+        ]
+      },
+      { $set: updateData },
+      { 
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true 
+      }
+    );
 
     res.json({ 
       success: true,
       message: "Calendar saved successfully",
-      calendarId: existingCalendar._id
+      calendarId: result._id
     });
   } catch (error) {
     console.error("Error saving calendar", error);
@@ -100,6 +108,18 @@ router.get("/:instituteId/load", async (req, res) => {
   } catch (error) {
     console.error("Error loading calendar", error);
     res.status(500).json({ error: "Failed to load calendar" });
+  }
+});
+
+
+// Get all calendars for institute (NEW ROUTE)
+router.get("/:instituteId/all", async (req, res) => {
+  try {
+    const calendars = await Calendar.find({ instituteId: req.params.instituteId });
+    res.json(calendars);
+  } catch (error) {
+    console.error("Error fetching calendars", error);
+    res.status(500).json({ error: "Failed to fetch calendars" });
   }
 });
 
