@@ -11,6 +11,8 @@ const CrmClass = require("./routes/classRoutes"); // ✅ Import this
 const StudentRoutes = require("./routes/StudentRoutes/studentRoutes"); // ✅ Import this
 const TimetableRoutes = require("./routes/Timetableroutes/timetableRoutes"); // ✅ Import this
 const SemCalenderRoutes = require("./routes/CalendarRoutes/CalendarRoutes"); // ✅ Import this
+const employeeMetaRoutes = require("./routes/EmployeeMeta/employeeMeta");
+const leaveRoutes = require("./routes/Leaveapplicationroutes/leaveRoutes");
 
 
 
@@ -63,7 +65,12 @@ app.use("/timetable", TimetableRoutes);
 // Semester Calendar Routes
 app.use("/calendar", SemCalenderRoutes);
 
+//Faculty Management Routes
 
+app.use("/employee", employeeMetaRoutes);
+
+// Leave Application Routes
+app.use("/leave", leaveRoutes);
 
 
 
