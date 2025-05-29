@@ -1,4 +1,3 @@
-// 📁 File: backend/models/LeaveApplication.js
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
@@ -9,9 +8,9 @@ const leaveApplicationSchema = new mongoose.Schema({
   leaveType: { 
     type: String, 
     required: true,
-    enum: ["Casual", "Sick", "Earned"] 
+    enum: ["Casual", "Sick", "Earned", "Academic"] // Added Academic type
   },
-  dates: { type: [String], required: true }, // Array of dates in YYYY-MM-DD format
+  dates: { type: [String], required: true },
   reason: { type: String, required: true },
   status: { 
     type: String, 
@@ -20,8 +19,11 @@ const leaveApplicationSchema = new mongoose.Schema({
   },
   appliedOn: { type: Date, default: Date.now },
   processedOn: Date,
-  processedBy: String, // Admin ID who processed it
-  comments: String // Admin comments
+  processedBy: String,
+  comments: String,
+  // Track if this application resulted in negative balance
+  resultedInNegative: { type: Boolean, default: false },
+  negativeBalanceAmount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model("LeaveApplication", leaveApplicationSchema);

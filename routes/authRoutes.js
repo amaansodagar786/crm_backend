@@ -96,14 +96,14 @@ router.post("/mainlogin", async (req, res) => {
       token,
       user: {
         id: user._id,
-        adminId: role === "mainadmin" ? user.adminId : null,
+        adminId: (role === "mainadmin" || role === "admin") ? user.adminId || user._id : null,
         name: user.name,
         email: user.email,
         role: role,
         instituteId: role !== "mainadmin" ? user.instituteId : null,
         studentId: role === "student" ? user.studentId : null,
         classId: role === "student" ? user.classId : null,  // Add this
-        divId: role === "student" ? user.divId : null  ,     // Add this
+        divId: role === "student" ? user.divId : null,     // Add this
         teacherId: role === "teacher" ? user.teacherId : null // Add this line
       },
     });
@@ -143,14 +143,14 @@ router.post("/mainregister", upload.single("photo"), async (req, res) => {
     }
 
     // Check institute's active subscription
-    const activeSubscription = await Subscription.findOne({ 
-      instituteId, 
-      status: "Active" 
+    const activeSubscription = await Subscription.findOne({
+      instituteId,
+      status: "Active"
     });
 
     if (!activeSubscription) {
-      return res.status(403).json({ 
-        message: "Institute doesn't have an active subscription. Please contact the institute admin." 
+      return res.status(403).json({
+        message: "Institute doesn't have an active subscription. Please contact the institute admin."
       });
     }
 
@@ -165,8 +165,8 @@ router.post("/mainregister", upload.single("photo"), async (req, res) => {
       case "admin":
         const adminCount = await Admin.countDocuments({ instituteId });
         if (adminCount >= planLimits.maxAdmins) {
-          return res.status(403).json({ 
-            message: `This institute has reached its maximum admin limit (${planLimits.maxAdmins}) for the ${activeSubscription.plan} plan.` 
+          return res.status(403).json({
+            message: `This institute has reached its maximum admin limit (${planLimits.maxAdmins}) for the ${activeSubscription.plan} plan.`
           });
         }
         break;
@@ -174,8 +174,8 @@ router.post("/mainregister", upload.single("photo"), async (req, res) => {
       case "teacher":
         const teacherCount = await Teacher.countDocuments({ instituteId });
         if (teacherCount >= planLimits.maxTeachers) {
-          return res.status(403).json({ 
-            message: `This institute has reached its maximum teacher limit (${planLimits.maxTeachers}) for the ${activeSubscription.plan} plan.` 
+          return res.status(403).json({
+            message: `This institute has reached its maximum teacher limit (${planLimits.maxTeachers}) for the ${activeSubscription.plan} plan.`
           });
         }
         break;
@@ -183,8 +183,8 @@ router.post("/mainregister", upload.single("photo"), async (req, res) => {
       case "student":
         const studentCount = await Student.countDocuments({ instituteId });
         if (studentCount >= planLimits.maxStudents) {
-          return res.status(403).json({ 
-            message: `This institute has reached its maximum student limit (${planLimits.maxStudents}) for the ${activeSubscription.plan} plan.` 
+          return res.status(403).json({
+            message: `This institute has reached its maximum student limit (${planLimits.maxStudents}) for the ${activeSubscription.plan} plan.`
           });
         }
         break;
@@ -221,9 +221,9 @@ router.post("/mainregister", upload.single("photo"), async (req, res) => {
 
     await transporter.sendMail(mailOptions);
 
-    res.status(201).json({ 
-      message: "Registration request submitted for approval and confirmation email sent.", 
-      user: newPendingUser 
+    res.status(201).json({
+      message: "Registration request submitted for approval and confirmation email sent.",
+      user: newPendingUser
     });
 
   } catch (error) {
